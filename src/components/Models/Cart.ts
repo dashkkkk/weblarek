@@ -16,7 +16,7 @@ export class Cart {
   }
 
   removeItemCart(id: string): void {
-    this.selectedItems.filter((item) => item.id !== id);
+    this.selectedItems = this.selectedItems.filter((item) => item.id !== id);
   }
 
   clearCart(): void {

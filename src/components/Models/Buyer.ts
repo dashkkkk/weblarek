@@ -37,23 +37,28 @@ export class Buyer {
     }
 
     validateData(): boolean {
-       
-        if(this.payment !== 'card' && this.payment !== 'cash') {
-            return false
-        }
-        if (!this.address) {
-            return false
-        }
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if(!emailRegex.test(this.email) || this.email.length == 0) {
-            return false
-        }
+        return this.validatePayment() && 
+               this.validateAddress() && 
+               this.validateEmail() && 
+               this.validatePhone();
+    }
 
-        const cleanPhone = this.phone.replace(/[-\s()]/g, '');
-        if (!/^(\+7|8)[0-9]{10}$/.test(cleanPhone)) {
-            return false
-        }
-        return true
+    validatePayment(): boolean {
+        return this.payment === 'card' || this.payment === 'cash';
+    }
+
+    validateAddress(): boolean {
+        return this.address.trim().length > 0;
+    }
+
+    validateEmail(): boolean {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(this.email);
+    }
+
+    validatePhone(): boolean {
+        const phoneRegex = /^(\+7|8)[\s\-]?\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}$/;
+        return phoneRegex.test(this.phone);
     }
 
 }

@@ -21,9 +21,17 @@ export interface IBuyer {
   address: string;
 }
 
-import { apiProducts } from "../utils/data";
-import { ItemsCatalog } from "../components/Models/ItemsCatalog.ts";
+export interface IOrder {
+  buyer: IBuyer,
+  items: IProduct[]
+}
 
-const productsModel = new ItemsCatalog();
-productsModel.setItems(apiProducts.items);
-console.log(`Массив товаров из каталога: `, productsModel.getItems())
+export interface IOrderResult {
+    id: string;
+    total: number;
+}
+
+export interface IApiResponse<T> {
+    total: number;
+    items: T[];
+}
