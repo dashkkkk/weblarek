@@ -186,7 +186,7 @@ Presenter - презентер содержит основную логику п
 
 Методы: 
 
-`saveData(dataBuyer: IBuyer): void` - сохранение данных о покупателе
+`saveData(dataBuyer: Partial<IBuyer>): void` - сохранение данных о покупателе
 
 `getData(): IBuyer` - получение всех данных о пользователе
 
@@ -212,6 +212,7 @@ Presenter - презентер содержит основную логику п
 
 Методы: 
 
-`getItems(): Promise<IProduct[]>` - получает список товаров в сервера 
+`getItems(): Promise<IProduct[]>` - получает промис со списком товаров в сервера 
 
-`postItems(order: IOrder): Promise<object>` - отправляет товар на сервер
+`postItems(order: IOrder): Promise<IOrderResult>` - отправляет товар на сервер и получает промис с результатом
+
