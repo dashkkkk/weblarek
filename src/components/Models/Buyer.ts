@@ -13,11 +13,19 @@ export class Buyer {
         this.phone = dataBuyer.phone  
     }
     
-    saveData(dataBuyer: IBuyer): void {
-        this.payment = dataBuyer.payment
-        this.address = dataBuyer.address
-        this.email = dataBuyer.email
-        this.phone = dataBuyer.phone  
+   saveData(dataBuyer: Partial<IBuyer>): void {
+        if (dataBuyer.payment !== undefined) {
+            this.payment = dataBuyer.payment;
+        }
+        if (dataBuyer.address !== undefined) {
+            this.address = dataBuyer.address;
+        }
+        if (dataBuyer.email !== undefined) {
+            this.email = dataBuyer.email;
+        }
+        if (dataBuyer.phone !== undefined) {
+            this.phone = dataBuyer.phone;
+        }
     }
 
     getData(): IBuyer {

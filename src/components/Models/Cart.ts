@@ -24,7 +24,7 @@ export class Cart {
   }
 
   getTotalPrice(): number {
-    if (!this.selectedItems) return 0;
+    if (!this.selectedItems.length) return 0;
 
     return this.selectedItems.reduce((total, item) => {
       return total + (item.price ?? 0);
