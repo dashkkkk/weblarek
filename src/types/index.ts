@@ -35,3 +35,11 @@ export interface IApiResponse<T> {
     total: number;
     items: T[];
 }
+
+export interface IGallery {
+  items: HTMLElement[];
+}
+
+export interface IHeader {
+  counter: number;
+}
