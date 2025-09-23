@@ -216,3 +216,234 @@ Presenter - презентер содержит основную логику п
 
 `postItems(order: IOrder): Promise<IOrderResult>` - отправляет товар на сервер и получает промис с результатом
 
+
+## Слой View 
+
+Слой представления в данном проекте реализует отображение данных для пользоваеля, а также помогает пользователю при взаимодействии с интерфейсом. Общий родитель классов слоя - Component<T>, от которого наследуются компоненты и утилиты.
+
+### Класс Page
+
+Назначение: Данный класс отвечает за отображение страницы при открытиии модальных окон. ё
+
+Конструктор: constructor(container: HTMLElement) 
+
+Поля: 
+
+`content: HTMLElement` - основной контент страницы
+`locked: boolean` - возможна ли прокрутка на странице
+
+Методы: 
+
+`locked(boolean): void` - блокирует / снимает блокировку на странице при открытии модального окна
+
+`render(data ? void): HTMLElement` - возращает корневой элемент страницы
+
+### Класс ModelDialog
+
+Данный класс реализует модальное окно: его открытие, закрытие различными способами и содержимое. 
+
+Конструктор: 
+
+`constructor(HTMLElement)` - принимает контейнер (DOM-element)
+
+Поля: 
+
+`content: HTMLElement` - контейнер для содержимого 
+`closeButton(HTMLButtonElement)` - кнопка для закрытия модального окна
+`ifOpen: boolean` - состояние модального окна
+
+Методы: 
+`open(node: HTMLElement):void` - октрывает модальное окно и представляет переданную информацию
+`close():void` - закрывает модальное окно
+`withClose(handler: () => void): void` - обработчик при закрытии модального окна
+
+### Класс Header 
+
+Назначение: Header страницы, содрежащий логотип с надписью и корзину со счетчиком товаров в ней. 
+
+Конструктор: `constructor(container: HTMLElement)`
+
+Поля: 
+
+`cartCount: HTMLElement` - количество товаров в коризне 
+
+Методы: 
+
+`setCartCount(count: number): void` — сеттер устанавливает количество товаров  в корзине
+`onCartClick(handler: () => void): void` — обработчик при клике на корзину 
+
+### Класс Gallery 
+
+Назначение: Представление каталога товаров на сайте
+
+Конструктор: `constructor(container: HTMLElement)` - принимает контейнер для контента
+
+Поля: 
+
+`products: HTMLElement[]` - принимает массив карточек - товаров
+
+Методы: 
+
+`setItems(nodes: HTMLElement[]): void` - устанавливает список карточек 
+
+`clear(): void` - очищает списко товаров со страницы
+
+### Класс BasicCard (общий)
+
+НАзначение: Класс является общим для трех дочерних классов карточек. 
+
+Конструктор: `constructor(container: HTMLElement)`
+
+Поля: 
+`id: string` - идентификатор картчоки товара
+`titleItem: HTMLElement` - название товара
+`price: HTMLElement` - цена товара 
+
+Методы: 
+
+`setId(id: string): void` - устанавливает идентификатор
+`setTitle(title: string): void` - устанаваливает имя карточки 
+`setPrice(price: number|null): void` - устанавливает цену или при ее отсутсвии - "бесценно"
+`onClick(handler: (id: string) => void): void` — обработчик события при клике по карточке
+
+
+
+#### Класс GalleryCard extends BasicCard
+
+Назначение: Класс отвечает за отображение карточки в галерее на сайте 
+
+Kонстурктор: `constructor(container: HTMLElement)`
+
+Дополнительные Поля: 
+
+`imageItem: HTMLImageElement` - изображение карточки товара
+`categoryItem: HTMLElement` - категория товара
+
+Дополнительные Методы: 
+
+`setImage(src: string, alt?: string): void` - устанавливает изображение 
+`setCategory(category: string): void` - устанавливает категорию
+`render(data: ICard): HTMLElement` - генерирует данные товаров
+
+
+
+#### Класс PreviewCard extends BasicCard
+
+Назначение: детальное описание карточки с изменением содержимого кнопки в зависимости от наличия в корзине выбранного товара. 
+
+Дополнительные Поля: 
+
+`imageItem: HTMLImageElement` - изображение карточки товара
+`categoryItem: HTMLElement` - категория товара
+`description: MLElement` - подробное описание товара
+`inCart: boolean` - прверяет,находится ли товар в корзине, что влияет на отображение кнопки на сайте
+`ifZero: boolean` - проверяет, не является ли товар бесценым, чтобы сделать покупку невозможной
+
+Дополнительные Методы: 
+
+`setImage(src: string, alt?: string): void` - устанавливает изображение 
+`setCategory(category: string): void` - устанавливает категорию
+`setDescription(description: string): void` - устанавливается описание 
+`onAddToCart(handler: (id: string) => void): void` - обработчик события при клике по кнопке "купить"
+
+#### Класс CartCard extends BasicCard
+
+Назначение: отображение информации о карточке в списке товаров из корзины
+
+Дополнительные Поля: 
+
+`indexCard: number` - порядковый номер товара в корзине
+`buttonDeleteItemFromCard: HTMLButtonElement` - возможность удалить товар из коризны
+
+Дополнительные Методы: 
+
+`setIndex(value: number): void` - устанавливает порядковый номер для списка товаров
+`removeFromCart(handler: (id: string) => void): void)` - по клику на кнопку удаляет товар из корзины
+
+### Класс Cart 
+
+Назначение: отображение корины товаров с возможностью перейти на этап оформления заказа. 
+
+Конструктор: `constructor(container: HTMLElement, eventBroker: IEvent)`
+
+Поля: 
+
+`items: HTMLElement[]` - список товаров, добавленных в коризну 
+`totalPrice: number` - итоговая стоимость товаров
+`orderButton: HTMLButtonElement` - кнопка для  оформления  заказа
+
+Методы: 
+
+`setItems(items: HTMLElement[])` - устанавливает список выбранный товаров для корзины
+`setTotalPrice(total: number): void` - отвечает за отображение итоговой стоимости товаров
+`onSubmitOrder(handler: () => void): void` - генерирует событие при клике на "Оформить"
+
+### Класс BasicForm (общий)
+
+Назначение: Отображение формы заказа в модальном окне, соблюдающие общие для двух дочрних паттерны. 
+
+Конструктор: `constructor(container: HTMLElement)`
+
+Поля: 
+
+`SubmitButton: HTMLButtonElement` - кнопка, которая на различных этапах оформления имеет описание "Далее" / "Оплатить"
+
+`errors: string` - строка с описанием ошибок при заполнении пользователем формы
+
+Методы: 
+
+`disableButton(state: boolean): void` - блокирует кнопку
+`setErrors(errors: Partial<Record<keyof T, string>>): void` - показывает отдельно ошибки в полях
+`onSubmitButton(handler: () => void): void` - генерирует событие при клике на конопку при оформлении
+
+
+#### Класс AddressForm extends BasicForm
+
+Назначение: Предоставление выбора способа оплаты из двух вариантов, а также заполнение адреса доставки. 
+
+Конструктор: `constructor(container: HTMLElement`
+
+Поля: 
+
+`paymentInput: 'cash' | 'card' | ''` - активирует способ оплаты
+`addressInput: string` - адрес, записанный строкой
+
+Методы: 
+
+`setPayment(value: TPayment): void` - выбор способа оплаты
+`setAddress(address: string): void` - адрес строкой
+
+
+#### Класс PersonalDataForm extends BasicForm
+
+Назначение: Формы для получение email и телефона пользователя. 
+
+Констуктор: `constructor(container: HTMLElement)`
+
+Поля: 
+
+`emailInput: string` - поле для email
+`phoneInput: string` - поля для номера телефона
+
+Методы: 
+
+`setEmail(email: string): void)` - ввод email пользователя
+`setPhone(phone: string): void)` - ввод номера телефона пользователя
+
+
+### Класс SuccessForm
+
+Назначение: Информация об успешном оформлении заказа. 
+
+Конструктор: `constructor(container: HTMLElement, eventBroker: IEvent)`
+
+Поля: 
+
+`totalPrice: number` - итоговая стоимость заказа
+
+
+Методы: 
+
+`setTotalPrice(value: number)` - отображение стоимости заказа
+
+
