@@ -1,16 +1,18 @@
 import { IProduct } from "../../types/index.ts";
+import { IEvents } from "../base/Events.ts";
 
 export class ItemsCatalog {
   protected items: IProduct[];
   protected selectedItem: IProduct | null;
 
-  constructor(items: IProduct[] = []) {
+  constructor(private eventBroker: IEvents, items: IProduct[] = []) {
     this.items = items;
     this.selectedItem = null;
   }
 
   setItems(items: IProduct[]): void{
     this.items = items 
+    this.eventBroker.emit("catalog:loaded");
   }
 
   getItems(): IProduct[] {

@@ -10,3 +10,9 @@ export const settings = {
 
 };
 
+export const categoryMap: Record<string, string> = {
+  "софт-скил": "soft",
+  "хард-скил": "hard",
+  другое: "other",
+  дополнительное: "additional",
+};

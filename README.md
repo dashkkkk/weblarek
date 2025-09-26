@@ -360,7 +360,7 @@ Kонстурктор: `constructor(container: HTMLElement)`
 `setIndex(value: number): void` - устанавливает порядковый номер для списка товаров
 `removeFromCart(handler: (id: string) => void): void)` - по клику на кнопку удаляет товар из корзины
 
-### Класс Cart 
+### Класс CartView
 
 Назначение: отображение корины товаров с возможностью перейти на этап оформления заказа. 
 
@@ -446,4 +446,6 @@ Kонстурктор: `constructor(container: HTMLElement)`
 
 `setTotalPrice(value: number)` - отображение стоимости заказа
 
+## Слой Презенетер 
 
+В проекте слой Презентер реализует функцию представления 

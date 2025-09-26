@@ -43,3 +43,21 @@ export interface IGallery {
 export interface IHeader {
   counter: number;
 }
+
+export interface ICart {
+    items: IProduct[];
+    total: number;
+}
+
+export interface IModel {
+  content: HTMLElement;
+}
+
+export interface ICard {
+  image: string;
+  title: string;
+  category: string;
+  price: number | null;
+  id: string;
+}
+
