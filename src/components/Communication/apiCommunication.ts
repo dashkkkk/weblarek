@@ -1,5 +1,5 @@
 import { IApi } from "../../types";
-import { IOrder } from "../../types";
+import { IOrderRequest } from "../../types";
 import { IProduct } from "../../types";
 import { IApiResponse } from "../../types";
 import { IOrderResult } from "../../types";
@@ -23,7 +23,7 @@ export class apiCommunication {
 
     }
 
-    async postItems(order: IOrder): Promise<IOrderResult> {
+    async postItems(order: IOrderRequest): Promise<IOrderResult> {
         try {
             const response = await this.api.post<IOrderResult>(`/order/`, order);
             return response;

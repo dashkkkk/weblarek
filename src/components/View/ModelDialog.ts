@@ -37,12 +37,12 @@ export class ModelDialog extends Component<IModel> {
             this.contentElement.innerHTML = '';
         }
     }
-    open(node: HTMLElement): void {
-    this.contentElement.replaceChildren(node);
-    this.container.classList.add("modal_active");
-    this.isOpen = true;
-    this.eventBroker.emit("modal:open");
-  }
+   open(): void {
+  this.container.classList.add("modal_active");
+  this.isOpen = true;
+  this.eventBroker.emit("modal:open");
+}
+  
 
   close(): void {
     this.container.classList.remove("modal_active");

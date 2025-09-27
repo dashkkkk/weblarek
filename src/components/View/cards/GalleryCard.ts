@@ -1,37 +1,37 @@
-
-import { ensureElement} from "../../../utils/utils";
+import { ensureElement } from "../../../utils/utils";
 import { BasicCard } from "./BasicCard";
 import { categoryMap } from "../../../utils/constants";
-
 
 export class GalleryCard extends BasicCard {
   protected categoryElement: HTMLElement;
   protected imageElement: HTMLImageElement;
 
-  constructor(container: HTMLElement, onSelect?: (id: string) => void) {
+  constructor(
+    container: HTMLElement,
+    id: string,
+    onSelect?: (id: string) => void
+  ) {
     super(container);
 
-    this.categoryElement = ensureElement<HTMLElement>(
-      ".card__category",
-      this.container
-    );
-    this.imageElement = ensureElement<HTMLImageElement>(
-      ".card__image",
-      this.container
-    );
+    this.id = id;
+
+    this.categoryElement = ensureElement<HTMLElement>(".card__category", this.container);
+    this.imageElement = ensureElement<HTMLImageElement>(".card__image", this.container);
+
     if (onSelect) {
-      this.container.addEventListener("click", (e) => {
-        e.preventDefault();
-        onSelect(this.container.id);
-      });
-    }
+    this.container.addEventListener("click", (e) => {
+      e.preventDefault();
+      onSelect(this.id);
+    });
   }
+}
 
   setImageSrc(src: string, alt?: string): void {
     if (this.imageElement) {
       super.setImage(this.imageElement, src, alt ?? "");
     }
   }
+
   setCategory(category: string): void {
     if (this.categoryElement) {
       this.categoryElement.textContent = category;
@@ -40,5 +40,4 @@ export class GalleryCard extends BasicCard {
       this.categoryElement.classList.add(`card__category_${modifier}`);
     }
   }
-
 }

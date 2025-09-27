@@ -5,10 +5,14 @@ import { API_URL, CDN_URL } from './utils/constants';
 import { apiCommunication } from './components/Communication/apiCommunication';
 
 import { EventEmitter } from './components/base/Events';
-import { cloneTemplate, ensureElement } from './utils/utils';
+import { ensureElement } from './utils/utils';
+
+// Models
 import { ItemsCatalog } from './components/Models/ItemsCatalog';
 import { Cart } from './components/Models/Cart';
 import { Buyer } from './components/Models/Buyer';
+
+// Views
 import { Header } from './components/View/Header';
 import { Gallery } from './components/View/Gallery';
 import { ModelDialog } from './components/View/ModelDialog';
@@ -19,7 +23,10 @@ import { CartView } from './components/View/CartView';
 import { OrderDataForm } from './components/View/forms/PersonalDataForm';
 import { ContactDataForm } from './components/View/forms/AddressForm';
 import { SuccessOrderForm } from './components/View/forms/SuccessForm';
+
+// Types
 import { IProduct } from './types';
+
 
 const api = new Api(API_URL);
 const apiClient = new apiCommunication(api);
@@ -63,59 +70,36 @@ apiClient.getItems()
 events.on('catalog:loaded', () => {
   const items = productsModel.getItems();
   const cards = items.map(item => {
+    const cardElement = (tplCatalog.content.cloneNode(true) as DocumentFragment).firstElementChild as HTMLElement;
+    
     const card = new GalleryCard(
-      tplCatalog.content.cloneNode(true) as HTMLElement,
-      () => {
-        const selectedItem = productsModel.getItemByID(item.id);
+      cardElement,
+      item.id,
+      (id: string) => {
+        const selectedItem = productsModel.getItemByID(id);
         if (selectedItem) {
           productsModel.saveSelectedItem(selectedItem);
           events.emit('preview:open', { item: selectedItem });
         }
       }
     );
+
     card.setTitle(item.title);
     card.setPrice(item.price);
     card.setCategory(item.category);
     card.setImageSrc(item.image, item.title);
-    const element = card.render();
-    element.id = item.id;
-    return element;
+
+    return card.render(); 
   });
+
   galleryView.setItems(cards);
 });
 
-events.on<{ id: string }>("view:product:selected", ({ id }) => {
-  const p = productsModel.getItemByID(id);
-  if (!p) return;
-  const node = cloneTemplate<HTMLElement>(tplPreview);
-  const preview = new PreviewCard(node, () => {
-
-    const already = cartModel.wheterItem(id);
-    if (already) {
-      cartModel.removeItemCart(id);
-    } else {
-      const productToAdd = productsModel.getItemByID(id);
-      if (productToAdd && productToAdd.price !== null) {
-        cartModel.addItemCart(productToAdd);
-      }
-    }
-
-    preview["setInCart"](cartModel.wheterItem(id));
-  });
-  preview["setId"](p.id);
-  preview["setTitle"](p.title);
-  preview["setCategory"](p.category);
-  preview["setImageSrc"](`${CDN_URL}${p.image}`, p.title);
-  preview["setPrice"](p.price);
-  preview["setInCart"](cartModel.wheterItem(p.id));
-  preview["setZeroPrice"](p.price === null);
-  preview["setDescription"](p.description);
-  modalView.open(preview.render());
-});
 
 events.on('cart:changed', () => {
   headerView.counter = cartModel.getItemsAmount();
 });
+
 
 events.on('basket:open', () => {
   const items = cartModel.getItemsCart();
@@ -153,8 +137,8 @@ events.on('basket:open', () => {
   modalView.open();
 });
 
+
 events.on('preview:open', ({ item }: { item: IProduct }) => {
-  const inCart = cartModel.wheterItem(item.id);
   const isZeroPrice = item.price === null || item.price <= 0;
 
   const previewCard = new PreviewCard(
@@ -163,7 +147,9 @@ events.on('preview:open', ({ item }: { item: IProduct }) => {
       if (isZeroPrice) return;
       const product = productsModel.getItemByID(id);
       if (!product) return;
-      if (inCart) {
+
+      const currentlyInCart = cartModel.wheterItem(id);
+      if (currentlyInCart) {
         cartModel.removeItemCart(id);
       } else {
         cartModel.addItemCart(product);
@@ -174,9 +160,13 @@ events.on('preview:open', ({ item }: { item: IProduct }) => {
   previewCard.setTitle(item.title);
   previewCard.setPrice(item.price);
   previewCard.setCategory(item.category);
-  previewCard.setDescription(item.description);
+  previewCard.setDescription(item.description || '');
   previewCard.setImageSrc(item.image, item.title);
-  previewCard.setInCart(true);
+  
+
+  const inCart = cartModel.wheterItem(item.id);
+  previewCard.setInCart(inCart);
+  
   if (isZeroPrice) {
     previewCard.setZeroPrice(true);
   }
@@ -188,49 +178,76 @@ events.on('preview:open', ({ item }: { item: IProduct }) => {
 });
 
 
-
 events.on('order:start', () => {
   const orderForm = new OrderDataForm(tplOrder.content.cloneNode(true) as HTMLElement, events);
-  const buyerData = buyerModel.getData();
+  const buyerData = buyerModel.getData(); 
+ 
   orderForm.setPayment(buyerData.payment);
   orderForm.address = buyerData.address;
   modalView.content = orderForm.render();
   modalView.open();
 });
 
-events.on('order:address:changed', ({ address }) => buyerModel.saveData({ address }));
-events.on('order:payment:changed', ({ payment }) => buyerModel.saveData({ payment }));
+events.on('order:address:changed', ({ address }: { address: string }) => {
+  buyerModel.saveData({ address });
+});
+events.on('order:payment:changed', ({ payment }: { payment: 'card' | 'cash' }) => {
+  buyerModel.saveData({ payment });
+});
+
 
 events.on('cart:fill-contacts', () => {
-  if (!buyerModel.validatePayment() || !buyerModel.validateAddress()) return;
+
   const contactsForm = new ContactDataForm(tplContacts.content.cloneNode(true) as HTMLElement, events);
   const buyerData = buyerModel.getData();
   contactsForm.setEmail(buyerData.email);
   contactsForm.setPhone(buyerData.phone);
   modalView.content = contactsForm.render();
   modalView.open();
+ 
 });
 
-events.on('order:email:changed', ({ email }) => buyerModel.saveData({ email }));
-events.on('order:phone:changed', ({ phone }) => buyerModel.saveData({ phone }));
+events.on('order:email:changed', ({ email }: { email: string }) => {
+  buyerModel.saveData({ email });
+});
+events.on('order:phone:changed', ({ phone }: { phone: string }) => {
+  buyerModel.saveData({ phone });
+});
+
 
 events.on('order:submit', () => {
-  if (!buyerModel.validateData()) return;
-  const orderData = {
-    ...buyerModel.getData(),
-    items: cartModel.getItemsCart().map(i => i.id),
-    total: cartModel.getTotalPrice()
-  };
+
+  if (!buyerModel.validateData()) {
+    return;
+  }
+
+const orderData = {
+  ...buyerModel.getData(), 
+  items: cartModel.getItemsCart().map(i => i.id),
+  total: cartModel.getTotalPrice()
+};
+
   apiClient.postItems(orderData)
     .then(result => {
       const successForm = new SuccessOrderForm(tplSuccess.content.cloneNode(true) as HTMLElement, events);
       successForm.total = result.total;
       modalView.content = successForm.render();
       modalView.open();
+
       cartModel.clearCart();
       buyerModel.clearData();
     })
-    .catch(err => console.error('Ошибка заказа:', err));
+    .catch(err => {
+      console.error('Ошибка при оформлении заказа:', err);
+    });
 });
 
-events.on('order:new', () => modalView.close());
+
+events.on('order:new', () => {
+  modalView.close();
+});
+
+
+events.on('modal:close', () => {
+  modalView.close();
+});

@@ -61,3 +61,11 @@ export interface ICard {
   id: string;
 }
 
+export interface IOrderRequest {
+  payment: 'card' | 'cash' | "";
+  email: string;
+  phone: string;
+  address: string;
+  items: string[]; 
+  total: number;
+}
