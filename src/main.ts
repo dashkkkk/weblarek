@@ -1,74 +1,236 @@
 import './scss/styles.scss';
 
-import { apiProducts } from './utils/data';
-import { ItemsCatalog } from './components/Models/ItemsCatalog';
-
-const productsModel = new ItemsCatalog();
-productsModel.setItems(apiProducts.items);
-
-console.log(`Массив товаров из каталога: `, productsModel.getItems())
-const firstItem = productsModel.getItems()[0]
-console.log(`Товар по id  :`, productsModel.getItemByID(firstItem.id))
-productsModel.saveSelectedItem(firstItem)
-console.log(`Выбранный товар:`, productsModel.getSelectedItem())
-
-
-import { Cart } from './components/Models/Cart';
-
-const cartModel = new Cart();
-cartModel.addItemCart(apiProducts.items[0])
-cartModel.addItemCart(apiProducts.items[1])
-cartModel.addItemCart(apiProducts.items[2])
-
-console.log(`Список товаров из корзины: `, cartModel.getItemsCart())
-cartModel.removeItemCart(cartModel.getItemsCart()[0].id)
-console.log(`Список товаров после удаления: `, cartModel.getItemsCart())
-
-console.log(`Получение итоговой стоимости: `, cartModel.getTotalPrice())
-console.log(`Gолучение количества товаров: `, cartModel.getItemsAmount())
-console.log(`Присутсвует ли в козине первый товар? `, cartModel.wheterItem(cartModel.getItemsCart()[0].id))
-console.log(`Очищение корзины: `, cartModel.clearCart())
-
-
-import { Buyer } from './components/Models/Buyer';
-
-
-const firstClient = {
-      payment: 'card' as const,
-      address: 'спб, ул. Варфоломеевская 16',
-      email: 'dvliakh@edu.hse.ru',
-      phone: '89605223703'  
-}
-const buyerModel = new Buyer(firstClient)
-buyerModel.saveData(firstClient)
-
-
-console.log(`Получение данных о пользователе: `, buyerModel.getData())
-console.log(`Проверка данных: `, buyerModel.validateData())
-console.log(`Проверка данных платежа: `, buyerModel.validateData())
-console.log(`Проверка данных адресса : `, buyerModel.validateAddress())
-console.log(`Проверка данных email : `, buyerModel.validateEmail())
-console.log(`Проверка данных номера телефона: `, buyerModel.validatePhone())
-
-buyerModel.clearData()
-console.log(`Данные после удаления: `, buyerModel.getData())
- 
-
-import { apiCommunication } from './components/Communication/apiCommunication';
 import { Api } from './components/base/Api';
-import { API_URL } from './utils/constants';
+import { API_URL, CDN_URL } from './utils/constants';
+import { apiCommunication } from './components/Communication/apiCommunication';
 
-const api =  new Api(API_URL)
-const apiCommunicationModel = new apiCommunication(api)
+import { EventEmitter } from './components/base/Events';
+import { cloneTemplate, ensureElement } from './utils/utils';
+import { ItemsCatalog } from './components/Models/ItemsCatalog';
+import { Cart } from './components/Models/Cart';
+import { Buyer } from './components/Models/Buyer';
+import { Header } from './components/View/Header';
+import { Gallery } from './components/View/Gallery';
+import { ModelDialog } from './components/View/ModelDialog';
+import { GalleryCard } from './components/View/cards/GalleryCard';
+import { PreviewCard } from './components/View/cards/PreviewCard';
+import { CartPreviewCard } from './components/View/cards/CartCard';
+import { CartView } from './components/View/CartView';
+import { OrderDataForm } from './components/View/forms/PersonalDataForm';
+import { ContactDataForm } from './components/View/forms/AddressForm';
+import { SuccessOrderForm } from './components/View/forms/SuccessForm';
+import { IProduct } from './types';
 
-try {
-      const dataServer = apiCommunicationModel.getItems()
-        .then(itemsList => {
-            productsModel.setItems(itemsList)
-            console.log(`Товары с сервера: `, productsModel.getItems())
-        })
+const api = new Api(API_URL);
+const apiClient = new apiCommunication(api);
+const events = new EventEmitter();
+
+const productsModel = new ItemsCatalog(events);
+const cartModel = new Cart(events);
+const buyerModel = new Buyer(events);
+
+const headerEl = ensureElement<HTMLElement>('.header');
+const galleryEl = ensureElement<HTMLElement>('.gallery');
+const modalContainer = ensureElement<HTMLElement>('#modal-container');
+
+const tplCatalog = ensureElement<HTMLTemplateElement>('#card-catalog');
+const tplPreview = ensureElement<HTMLTemplateElement>('#card-preview');
+const tplBasket = ensureElement<HTMLTemplateElement>('#basket');
+const tplBasketItem = ensureElement<HTMLTemplateElement>('#card-basket');
+const tplOrder = ensureElement<HTMLTemplateElement>('#order');
+const tplContacts = ensureElement<HTMLTemplateElement>('#contacts');
+const tplSuccess = ensureElement<HTMLTemplateElement>('#success');
+
+const headerView = new Header(headerEl, events);
+const galleryView = new Gallery(galleryEl);
+const modalView = new ModelDialog(modalContainer, events);
+
+
+apiClient.getItems()
+  .then(items => {
+    const itemsWithImages = items.map(item => ({
+      ...item,
+      image: item.image ? CDN_URL + item.image : ''
+    }));
+    productsModel.setItems(itemsWithImages);
+  })
+  .catch(err => {
+    console.error('Не удалось загрузить каталог:', err);
+  });
+
+
+
+events.on('catalog:loaded', () => {
+  const items = productsModel.getItems();
+  const cards = items.map(item => {
+    const card = new GalleryCard(
+      tplCatalog.content.cloneNode(true) as HTMLElement,
+      () => {
+        const selectedItem = productsModel.getItemByID(item.id);
+        if (selectedItem) {
+          productsModel.saveSelectedItem(selectedItem);
+          events.emit('preview:open', { item: selectedItem });
+        }
       }
- catch (error) {
-      console.error(`Ошибка при получении данных с сервера: `, error)
- }
+    );
+    card.setTitle(item.title);
+    card.setPrice(item.price);
+    card.setCategory(item.category);
+    card.setImageSrc(item.image, item.title);
+    const element = card.render();
+    element.id = item.id;
+    return element;
+  });
+  galleryView.setItems(cards);
+});
 
+events.on<{ id: string }>("view:product:selected", ({ id }) => {
+  const p = productsModel.getItemByID(id);
+  if (!p) return;
+  const node = cloneTemplate<HTMLElement>(tplPreview);
+  const preview = new PreviewCard(node, () => {
+
+    const already = cartModel.wheterItem(id);
+    if (already) {
+      cartModel.removeItemCart(id);
+    } else {
+      const productToAdd = productsModel.getItemByID(id);
+      if (productToAdd && productToAdd.price !== null) {
+        cartModel.addItemCart(productToAdd);
+      }
+    }
+
+    preview["setInCart"](cartModel.wheterItem(id));
+  });
+  preview["setId"](p.id);
+  preview["setTitle"](p.title);
+  preview["setCategory"](p.category);
+  preview["setImageSrc"](`${CDN_URL}${p.image}`, p.title);
+  preview["setPrice"](p.price);
+  preview["setInCart"](cartModel.wheterItem(p.id));
+  preview["setZeroPrice"](p.price === null);
+  preview["setDescription"](p.description);
+  modalView.open(preview.render());
+});
+
+events.on('cart:changed', () => {
+  headerView.counter = cartModel.getItemsAmount();
+});
+
+events.on('basket:open', () => {
+  const items = cartModel.getItemsCart();
+  const total = cartModel.getTotalPrice();
+
+  const cartCards = items.map((item, index) => {
+    const card = new CartPreviewCard(
+      tplBasketItem.content.cloneNode(true) as HTMLElement,
+      (id: string) => {
+        cartModel.removeItemCart(id);
+      }
+    );
+    card.setTitle(item.title);
+    card.setPrice(item.price);
+    card.index = index + 1;
+    const element = card.render();
+    element.id = item.id;
+    return element;
+  });
+
+  const cartView = new CartView(
+    tplBasket.content.cloneNode(true) as HTMLElement,
+    () => {
+      modalView.close();
+      events.emit('order:start');
+    },
+    () => {
+      cartModel.clearCart();
+    }
+  );
+  cartView.setItems(cartCards);
+  cartView.setTotal(total);
+
+  modalView.content = cartView.render();
+  modalView.open();
+});
+
+events.on('preview:open', ({ item }: { item: IProduct }) => {
+  const inCart = cartModel.wheterItem(item.id);
+  const isZeroPrice = item.price === null || item.price <= 0;
+
+  const previewCard = new PreviewCard(
+    tplPreview.content.cloneNode(true) as HTMLElement,
+    (id: string) => {
+      if (isZeroPrice) return;
+      const product = productsModel.getItemByID(id);
+      if (!product) return;
+      if (inCart) {
+        cartModel.removeItemCart(id);
+      } else {
+        cartModel.addItemCart(product);
+      }
+    }
+  );
+
+  previewCard.setTitle(item.title);
+  previewCard.setPrice(item.price);
+  previewCard.setCategory(item.category);
+  previewCard.setDescription(item.description);
+  previewCard.setImageSrc(item.image, item.title);
+  previewCard.setInCart(true);
+  if (isZeroPrice) {
+    previewCard.setZeroPrice(true);
+  }
+
+  const element = previewCard.render();
+  element.id = item.id;
+  modalView.content = element;
+  modalView.open();
+});
+
+
+
+events.on('order:start', () => {
+  const orderForm = new OrderDataForm(tplOrder.content.cloneNode(true) as HTMLElement, events);
+  const buyerData = buyerModel.getData();
+  orderForm.setPayment(buyerData.payment);
+  orderForm.address = buyerData.address;
+  modalView.content = orderForm.render();
+  modalView.open();
+});
+
+events.on('order:address:changed', ({ address }) => buyerModel.saveData({ address }));
+events.on('order:payment:changed', ({ payment }) => buyerModel.saveData({ payment }));
+
+events.on('cart:fill-contacts', () => {
+  if (!buyerModel.validatePayment() || !buyerModel.validateAddress()) return;
+  const contactsForm = new ContactDataForm(tplContacts.content.cloneNode(true) as HTMLElement, events);
+  const buyerData = buyerModel.getData();
+  contactsForm.setEmail(buyerData.email);
+  contactsForm.setPhone(buyerData.phone);
+  modalView.content = contactsForm.render();
+  modalView.open();
+});
+
+events.on('order:email:changed', ({ email }) => buyerModel.saveData({ email }));
+events.on('order:phone:changed', ({ phone }) => buyerModel.saveData({ phone }));
+
+events.on('order:submit', () => {
+  if (!buyerModel.validateData()) return;
+  const orderData = {
+    ...buyerModel.getData(),
+    items: cartModel.getItemsCart().map(i => i.id),
+    total: cartModel.getTotalPrice()
+  };
+  apiClient.postItems(orderData)
+    .then(result => {
+      const successForm = new SuccessOrderForm(tplSuccess.content.cloneNode(true) as HTMLElement, events);
+      successForm.total = result.total;
+      modalView.content = successForm.render();
+      modalView.open();
+      cartModel.clearCart();
+      buyerModel.clearData();
+    })
+    .catch(err => console.error('Ошибка заказа:', err));
+});
+
+events.on('order:new', () => modalView.close());

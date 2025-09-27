@@ -54,16 +54,16 @@ export class PreviewCard extends BasicCard {
     }
   }
 
-  set description(value: string) {
+  setDescription(value: string) {
     this.descriptionElement.textContent = value;
   }
 
-  set inCart(value: boolean) {
+  setInCart(value: boolean) {
     this.available = value;
     this.actionButton.textContent = value ? "Удалить из корзины" : "В корзину";
   }
 
-  set zeroPrice(value: boolean) {
+  setZeroPrice(value: boolean) {
     this.actionButton.textContent = "Недоступно";
     this.actionButton.disabled = value;
   }
