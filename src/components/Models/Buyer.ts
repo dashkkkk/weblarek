@@ -56,6 +56,26 @@ export class Buyer {
     this.eventBroker.emit("user:changed");
   }
 
+
+  getValidationErrors(): string {
+    const errors: string[] = [];
+    
+    if (!this.validatePayment()) {
+      errors.push('Не выбран способ оплаты');
+    }
+    if (!this.validateAddress()) {
+      errors.push('Укажите адрес доставки');
+    }
+    if (!this.validateEmail()) {
+      errors.push('Некорректный email');
+    }
+    if (!this.validatePhone()) {
+      errors.push('Некорректный телефон');
+    }
+    
+    return errors.join(', ');
+  }
+
   validateData(): boolean {
     return (
       this.validatePayment() &&
